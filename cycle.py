@@ -2,7 +2,7 @@ userTickets = [input("Введите Ваше имя: "), input("Введите 
 bill = 0
 while not userTickets[1].isdigit():
     userTickets[1] = input("Значение должно быть числом: ")
-for i in list(range(int(userTickets[1]))):
+for i in range(int(userTickets[1])):
     ageGuest = int(input(f"Введите возраст гостя {i+1}: "))
     if ageGuest < 18:
         bill += 0
