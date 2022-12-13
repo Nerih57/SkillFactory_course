@@ -1,5 +1,7 @@
 import os.path
 
+import pytest
+
 from api import PetFriendsApi
 from settings import email, password, invalid_email, invalid_password
 
@@ -10,6 +12,23 @@ pet_photo_for_update = os.path.join('images', 'dog.jpg')
 pet_photo_for_update = os.path.join(os.path.dirname(__file__), pet_photo_for_update)
 invalid_file_for_update = os.path.join('images', 'example.txt')
 invalid_file_for_update = os.path.join(os.path.dirname(__file__), invalid_file_for_update)
+
+
+def generate_string(n):
+    return "x" * n
+
+
+def russian_chars():
+    return 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+
+
+# Здесь мы взяли 20 популярных китайских иероглифов
+def chinese_chars():
+    return '的一是不了人我在有他这为之大来以个中上们'
+
+
+def special_chars():
+    return '|\\/!@#$%^&*()-_=+`~?"№;:[]{}'
 
 
 def test_get_api_key_for_valid_user(email_valid=email, password_valid=password):
@@ -217,3 +236,42 @@ def test_update_pet_negativ_age(filters='my_pets'):
         assert status == 500
     else:
         raise Exception("Не добавлены питомцы")
+
+
+@pytest.mark.parametrize("name"
+    , [generate_string(255), generate_string(1001), russian_chars(), russian_chars().upper(), chinese_chars(),
+       special_chars(), '123']
+    , ids=['255 symbols', 'more than 1000 symbols', 'russian', 'RUSSIAN', 'chinese', 'specials', 'digit'])
+@pytest.mark.parametrize("animal_type"
+    , [generate_string(255), generate_string(1001), russian_chars(), russian_chars().upper(), chinese_chars(),
+       special_chars(), '123']
+    , ids=['255 symbols', 'more than 1000 symbols', 'russian', 'RUSSIAN', 'chinese', 'specials', 'digit'])
+@pytest.mark.parametrize("age", ['1'], ids=['min'])
+def test_add_new_pet_simple(name, animal_type, age):
+    """Проверяем, что можно добавить питомца с различными данными"""
+
+    # Добавляем питомца
+    _, auth_key = pfa.get_api_key(email, password)
+    pytest.status, result = pfa.add_new_pet_simple(auth_key, name, animal_type, age)
+
+    # Сверяем полученный ответ с ожидаемым результатом
+    assert pytest.status == 200
+    assert result['name'] == name
+    assert result['age'] == age
+    assert result['animal_type'] == animal_type
+
+
+@pytest.mark.parametrize("name", [''], ids=['empty'])
+@pytest.mark.parametrize("animal_type", [''], ids=['empty'])
+@pytest.mark.parametrize("age",
+                         ['', '-1', '0', '100', '1.5', '2147483647', '2147483648', special_chars(), russian_chars(),
+                          russian_chars().upper(), chinese_chars()]
+    , ids=['empty', 'negative', 'zero', 'greater than max', 'float', 'int_max', 'int_max + 1', 'specials',
+           'russian', 'RUSSIAN', 'chinese'])
+def test_add_new_pet_simple_negative(name, animal_type, age):
+    # Добавляем питомца
+    _, auth_key = pfa.get_api_key(email, password)
+    pytest.status, result = pfa.add_new_pet_simple(auth_key, name, animal_type, age)
+
+    # Сверяем полученный ответ с ожидаемым результатом
+    assert pytest.status == 400
