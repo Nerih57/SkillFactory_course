@@ -15,7 +15,7 @@ def testing():
     pytest.driver.quit()
 
 
-def test_show_my_pets():
+def test_show_all_pets():
     # Вводим email
     pytest.driver.find_element(By.ID, 'email').send_keys('vasya@mail.com')
     # Вводим пароль
